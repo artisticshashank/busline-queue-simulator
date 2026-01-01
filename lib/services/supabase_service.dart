@@ -17,6 +17,14 @@ class SupabaseService {
     }
   }
 
+  Future<void> updateName(String id, String newName) async {
+    try {
+      await client.from('queue').update({'name': newName}).eq('id', id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<QueueItem?> dequeue() async {
     try {
       // 1. Get the first person in line

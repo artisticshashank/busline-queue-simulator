@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../models/queue_item.dart';
 import '../services/supabase_service.dart';
 
 class QueueProvider extends ChangeNotifier {
   final SupabaseService _supabaseService = SupabaseService();
-  
+
   List<QueueItem> _queue = [];
   List<QueueItem> get queue => _queue;
-  
+
   // Logs for "Learning Mode"
-  List<String> _logs = [];
+  final List<String> _logs = [];
   List<String> get logs => _logs;
-  
-  bool _isLoading = false;
+
+  final bool _isLoading = false;
   bool get isLoading => _isLoading;
 
   QueueProvider() {
@@ -21,27 +22,42 @@ class QueueProvider extends ChangeNotifier {
 
   void _initSubscription() {
     try {
-      _supabaseService.getQueueStream().listen((data) {
-        _queue = data;
-        notifyListeners();
-      }, onError: (error) {
-        _addLog("Error syncing data: $error");
-      });
+      _supabaseService.getQueueStream().listen(
+        (data) {
+          _queue = data;
+          notifyListeners();
+        },
+        onError: (error) {
+          _addLog("Error syncing data: $error");
+        },
+      );
     } catch (e) {
       _addLog("Supabase not initialized or error: $e");
     }
   }
 
   Future<void> addPerson() async {
-    final names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Evan', 'Fiona', 'George', 'Hannah', 'Ian', 'Julia'];
-    final name = names[DateTime.now().microsecondsSinceEpoch % names.length];
+    final names = [
+      'Alice',
+      'Bob',
+      'Charlie',
+      'Diana',
+      'Evan',
+      'Fiona',
+      'George',
+      'Hannah',
+      'Ian',
+      'Julia',
+    ];
+    final random = Random();
+    final name = names[random.nextInt(names.length)];
     // Random avatar index 0-4
-    final avatarIndex = DateTime.now().microsecondsSinceEpoch % 5;
-    
+    final avatarIndex = random.nextInt(5);
+
     final newItem = QueueItem.create(name: name, avatarIndex: avatarIndex);
-    
+
     _addLog("Enqueue: Adding ${newItem.name} to the line...");
-    
+
     try {
       await _supabaseService.enqueue(newItem);
       // Success log is optional as the stream will update the UI
@@ -55,7 +71,7 @@ class QueueProvider extends ChangeNotifier {
       _addLog("Dequeue: Queue is empty, no one to board.");
       return;
     }
-    
+
     _addLog("Dequeue: Calculating who boards next...");
 
     try {
@@ -69,7 +85,22 @@ class QueueProvider extends ChangeNotifier {
       _addLog("Dequeue Failed: $e");
     }
   }
-  
+
+  Future<void> updatePersonName(String id, String newName) async {
+    try {
+      final itemIndex = _queue.indexWhere((item) => item.id == id);
+      if (itemIndex != -1) {
+        final oldName = _queue[itemIndex].name;
+        _addLog("Update: Renaming $oldName to $newName...");
+        await _supabaseService.updateName(id, newName);
+        // Optimistic update or wait for stream?
+        // Stream should handle it, but we can log success
+      }
+    } catch (e) {
+      _addLog("Update Failed: $e");
+    }
+  }
+
   void _addLog(String message) {
     // Add new log at the top
     _logs.insert(0, message);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/queue_provider.dart';
 import '../widgets/person_avatar.dart';
+import '../models/queue_item.dart';
 
 class BusStopScreen extends StatelessWidget {
   const BusStopScreen({super.key});
@@ -28,9 +29,13 @@ class BusStopScreen extends StatelessWidget {
                   Positioned(
                     left: 20,
                     top: 20,
-                    child: Icon(Icons.directions_bus, size: 40, color: Colors.grey[400]),
+                    child: Icon(
+                      Icons.directions_bus,
+                      size: 40,
+                      color: Colors.grey[400],
+                    ),
                   ),
-                  
+
                   // The Queue
                   Consumer<QueueProvider>(
                     builder: (context, provider, child) {
@@ -39,23 +44,29 @@ class BusStopScreen extends StatelessWidget {
                           child: Text(
                             "The bus stop is empty.\nTap + to add people!",
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 16,
+                            ),
                           ),
                         );
                       }
-                      
+
                       return ListView.builder(
                         padding: const EdgeInsets.only(left: 60, right: 20),
                         scrollDirection: Axis.horizontal,
                         itemCount: provider.queue.length,
                         itemBuilder: (context, index) {
                           final item = provider.queue[index];
-                          // Simple animation wrapper? 
+                          // Simple animation wrapper?
                           // unique key is important for ListView to track items
-                          return PersonAvatar(
-                            key: ValueKey(item.id),
-                            item: item,
-                            index: index,
+                          return GestureDetector(
+                            onTap: () => _showEditNameDialog(context, item),
+                            child: PersonAvatar(
+                              key: ValueKey(item.id),
+                              item: item,
+                              index: index,
+                            ),
                           );
                         },
                       );
@@ -65,7 +76,7 @@ class BusStopScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // 2. Info Panel / Logs
           Expanded(
             flex: 1,
@@ -77,8 +88,12 @@ class BusStopScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     color: Colors.blueGrey[50],
-                    child: const Text("Operations Log (Learning Mode)", 
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                    child: const Text(
+                      "Operations Log (Learning Mode)",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -89,10 +104,15 @@ class BusStopScreen extends StatelessWidget {
                           itemCount: provider.logs.length,
                           itemBuilder: (context, index) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2.0,
+                              ),
                               child: Text(
                                 provider.logs[index],
-                                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 12,
+                                ),
                               ),
                             );
                           },
@@ -130,6 +150,44 @@ class BusStopScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showEditNameDialog(BuildContext context, QueueItem item) {
+    final TextEditingController nameController = TextEditingController(
+      text: item.name,
+    );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Name"),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: "Name"),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                final newName = nameController.text.trim();
+                if (newName.isNotEmpty && newName != item.name) {
+                  context.read<QueueProvider>().updatePersonName(
+                    item.id,
+                    newName,
+                  );
+                }
+                Navigator.of(context).pop();
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
     );
   }
 }
