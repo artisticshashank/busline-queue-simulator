@@ -1,4 +1,8 @@
 # 🚌 BusLine Queue Simulator
+## 🚀 Try It Out
+
+Curious to see it in action?  
+👉 [**Try it for free here**](https://busline-queue.netlify.app/)
 
 ![Flutter](https://badgen.net/badge/Flutter/3.10.3/blue)
 [![Dart](https://img.shields.io/badge/Dart-3.10.3-0175C2?logo=dart)](https://dart.dev)
